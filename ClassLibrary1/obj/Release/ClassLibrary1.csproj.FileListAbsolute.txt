@@ -1,0 +1,9 @@
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\bin\Release\SupportClass.dll
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\bin\Release\SupportClass.pdb
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\bin\Release\ModBus_Library.dll
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\bin\Release\ModBus_Library.pdb
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Release\ClassLibrary1.csproj.CoreCompileInputs.cache
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Release\ClassLibrary1.csproj.CopyComplete
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Release\SupportClass.dll
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Release\SupportClass.pdb
+C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Release\ClassLibrary1.csprojAssemblyReference.cache
