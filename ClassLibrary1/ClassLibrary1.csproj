@@ -31,8 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ModBus_Library">
-      <HintPath>..\..\..\..\..\..\Test\Test-stand\test stand\bin\Release\ModBus_Library.dll</HintPath>
+    <Reference Include="ModBus_Library, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\ModBus_Library\bin\Debug\ModBus_Library.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

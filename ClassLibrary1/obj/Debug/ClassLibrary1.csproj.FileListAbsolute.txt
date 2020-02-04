@@ -7,3 +7,12 @@ C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Debug\ClassLi
 C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Debug\SupportClass.dll
 C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Debug\SupportClass.pdb
 C:\Users\Professional\source\repos\SUpport Class\ClassLibrary1\obj\Debug\ClassLibrary1.csprojAssemblyReference.cache
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\bin\Debug\SupportClass.dll
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\bin\Debug\SupportClass.pdb
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\bin\Debug\ModBus_Library.pdb
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\obj\Debug\ClassLibrary1.csprojAssemblyReference.cache
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\obj\Debug\ClassLibrary1.csproj.CoreCompileInputs.cache
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\obj\Debug\ClassLibrary1.csproj.CopyComplete
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\obj\Debug\SupportClass.dll
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\obj\Debug\SupportClass.pdb
+C:\Users\d.shcherbachenya\Desktop\projects\Support Class\library\ClassLibrary1\bin\Debug\ModBus_Library.dll

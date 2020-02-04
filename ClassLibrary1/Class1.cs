@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ModBus_Library;
 using System.Windows.Forms;
 using System.Drawing;
+using ModBus_Library;
 
 namespace Support_Class
 {
     public class My_Button_Click
     {
-        ModBus_Libra port;
-        Addres_Controls addres;
+        public ModBus_Libra port;
+        public Addres_Controls addres;
 
-        byte[] data;
+        public byte[] data;
 
         public My_Button_Click(ModBus_Libra using_port, Addres_Controls using_addres, byte[] data_to_send)
         {
@@ -47,10 +47,11 @@ namespace Support_Class
 
     public class My_Button_Colorized
     {
-        ModBus_Libra port;
-        short addres;
-        Addres_Controls dout_addres;
         int position;
+        short addres;
+
+        ModBus_Libra port;            
+        Addres_Controls dout_addres;        
 
         public My_Button_Colorized(ModBus_Libra using_port, short color_check_color, Addres_Controls dout_addres_color, int position_color)
         {
@@ -60,9 +61,9 @@ namespace Support_Class
             position = position_color;
         }
 
-        public Color Checkout(ModBus_Libra checking_port, Color init_color)
+        public (Color, bool) Checkout(ModBus_Libra checking_port, Color init_color)
         {
-            Color output = init_color;
+            var output = (init_color, false);
             try
             {
                 if (port.Port.PortName == checking_port.Port.PortName && port.Data_Receive[1] == 0x02 &&
@@ -70,7 +71,8 @@ namespace Support_Class
                 port.Data_Receive[0] == dout_addres.Addres)
                 {
                     short some = port.Data_Receive[2] == 1 ? (short)port.Data_Receive[3] : (short)((short)(port.Data_Receive[3] << 8) | (short)port.Data_Receive[4]);
-                    output = (some & position) != 0 ? Color.Red : init_color;
+                    output.Item1 = (some & position) != 0 ? Color.Red : init_color;
+                    output.Item2 = true;
                 }
             }
             catch (Exception) { }
@@ -121,9 +123,10 @@ namespace Support_Class
 
         public My_Button(string using_text, string using_name, Color using_color, My_Button_Click my_button_click = null, My_Button_Colorized button_color = null, My_Button_Result result = null)
         {
-            if (button_color != null) colorized = button_color;
-            if (my_button_click != null) { click = my_button_click; Click += (s, e) => { click.send_data(BackColor == Color.Red ? (byte)0 : (byte)1); }; }
-            if (result != null) { button_result = result; }
+            button_result = result;
+            click = my_button_click;
+            colorized = button_color;
+            if (click != null) { Click += (s, e) => { click.send_data(BackColor == Color.Red ? (byte)0 : (byte)1); }; }
             initial_color = using_color;
             TextAlign = ContentAlignment.MiddleLeft;
             Padding = new Padding(40, 0, 0, 0);
@@ -135,13 +138,12 @@ namespace Support_Class
             FlatStyle = FlatStyle.Flat;
             Height = 35;
             FlatAppearance.BorderSize = 0;
-            BackColor = Color.LightGray;
             Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Bold, GraphicsUnit.Point, 204);
         }
 
-        public void button_colorized(ModBus_Libra checking_port)
+        public void Checkout(ModBus_Libra checking_port)
         {
-            if (colorized != null) BackColor = colorized.Checkout(checking_port, initial_color);
+            if (colorized != null) { if(colorized.Checkout(checking_port, initial_color).Item2) BackColor = colorized.Checkout(checking_port, initial_color).Item1; }
             if (button_result != null) button_result.Checkout(checking_port);
         }
 
@@ -248,4 +250,25 @@ namespace Support_Class
             exchange_chanel = exchange_chanel_count;
         }
     }
+
+    public class Send_Data
+    {
+        public byte[] data;
+        public ModBus_Libra port;
+        public Addres_Controls addres;
+
+        public Send_Data(byte[] sending_data, ModBus_Libra using_prot, Addres_Controls using_addres)
+        {
+            data = sending_data;
+            port = using_prot;
+            addres = using_addres;
+        }
+
+        public void sending()
+        {
+            data[0] = addres.Addres;
+            port.Transmit(data);
+        }
+    }
+
 }
