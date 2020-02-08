@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using ModBus_Library;
+using System.Data.SqlClient;
 
 namespace Support_Class
 {
@@ -50,12 +51,14 @@ namespace Support_Class
         int position;
         short addres;
 
-        ModBus_Libra port;            
+        ModBus_Libra port;
+        ModBus_Libra port2;
         Addres_Controls dout_addres;        
 
-        public My_Button_Colorized(ModBus_Libra using_port, short color_check_color, Addres_Controls dout_addres_color, int position_color)
+        public My_Button_Colorized(ModBus_Libra using_port, short color_check_color, Addres_Controls dout_addres_color, int position_color, ModBus_Libra checkout_port2 = null)
         {
             port = using_port;
+            port2 = checkout_port2;
             addres = color_check_color;
             dout_addres = dout_addres_color;
             position = position_color;
@@ -76,6 +79,19 @@ namespace Support_Class
                 }
             }
             catch (Exception) { }
+            if (port2 != null)
+                try
+                {
+                    if (port2.Port.PortName == checking_port.Port.PortName && port2.Data_Receive[1] == 0x02 &&
+                    (short)((short)(port2.Data_Transmit[2] << 8) | (short)port2.Data_Transmit[3]) == addres &&
+                    port2.Data_Receive[0] == dout_addres.Addres)
+                    {
+                        short some = port2.Data_Receive[2] == 1 ? (short)port2.Data_Receive[3] : (short)((short)(port2.Data_Receive[3] << 8) | (short)port2.Data_Receive[4]);
+                        output.Item1 = (some & position) != 0 ? Color.Red : init_color;
+                        output.Item2 = true;
+                    }
+                }
+                catch (Exception) { }
             return output;
         }
     }
@@ -83,14 +99,16 @@ namespace Support_Class
     public class My_Button_Result
     {
         public ModBus_Libra port;
+        public ModBus_Libra port2;
         public Addres_Controls dout_addres;
 
         public short addres;
         int position;
         public float result = 0;
 
-        public My_Button_Result(ModBus_Libra checkout_port, Addres_Controls checkout_dout_addres, short checkout_addres, int checkout_position)
+        public My_Button_Result(ModBus_Libra checkout_port, Addres_Controls checkout_dout_addres, short checkout_addres, int checkout_position, ModBus_Libra checkout_port2 = null)
         {
+            port2 = checkout_port2;
             port = checkout_port;
             dout_addres = checkout_dout_addres;
             addres = checkout_addres;
@@ -99,15 +117,40 @@ namespace Support_Class
 
         public float Checkout(ModBus_Libra port_checkout)
         {
-            try
+            if (port.Port.PortName == port_checkout.Port.PortName)
             {
-                if (port.Port.PortName != port_checkout.Port.PortName) return result;
-                if (port.Data_Receive[0] == dout_addres.Addres && port.Data_Receive[1] == 0x04 &&
-                    (short)((short)(port.Data_Transmit[2] << 8) | (short)port.Data_Transmit[3]) == addres)
-                { result = port.Result[position]; }
+                try
+                {
+                    if (port_checkout.Data_Receive[0] == dout_addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
+                        (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres)
+                    { result = port_checkout.Result[position]; }
+                }
+                catch (Exception) { }
             }
-            catch (Exception) { }
+            if (port2 != null)
+                if(port2.Port.PortName == port_checkout.Port.PortName)
+                {
+                    try
+                    {
+                        if (port_checkout.Data_Receive[0] == dout_addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
+                            (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres)
+                        { result = port_checkout.Result[position]; }
+                    }
+                    catch (Exception) { }
+                }
             return result;
+        }
+    }
+
+    public class My_Control_Visible
+    {
+        public byte position;
+        public string name;
+
+        public My_Control_Visible(string using_name, byte using_position)
+        {
+            name = using_name;
+            position = using_position;
         }
     }
 
@@ -118,11 +161,14 @@ namespace Support_Class
 
         Color initial_color;
         public My_Button_Click click;
+        public My_Control_Visible my_button_visible;
         public My_Button_Colorized colorized;
         public My_Button_Result button_result;
 
-        public My_Button(string using_text, string using_name, Color using_color, My_Button_Click my_button_click = null, My_Button_Colorized button_color = null, My_Button_Result result = null)
+        public My_Button(string using_text, string using_name, Color using_color, Color my_button_font_color, My_Button_Click my_button_click = null, My_Button_Colorized button_color = null, My_Button_Result result = null, My_Control_Visible visible = null)
         {
+            my_button_visible = visible;
+            ForeColor = my_button_font_color;
             button_result = result;
             click = my_button_click;
             colorized = button_color;
@@ -141,16 +187,28 @@ namespace Support_Class
             Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Bold, GraphicsUnit.Point, 204);
         }
 
+        public void Reset()
+        {
+            if (BackColor == Color.Red)  click.send_data(0);
+        }
+
+        public void visible(byte check_byte, string name)
+        {
+            if (my_button_visible == null) return;
+            if (name.ToLower() == "no module" || check_byte >= my_button_visible.position) Visible = true;
+            else Visible = false;
+        }
+
         public void Checkout(ModBus_Libra checking_port)
         {
             if (colorized != null) { if(colorized.Checkout(checking_port, initial_color).Item2) BackColor = colorized.Checkout(checking_port, initial_color).Item1; }
-            if (button_result != null) button_result.Checkout(checking_port);
+            if (button_result != null) Result = button_result.Checkout(checking_port);
         }
 
         public float Result
         {
-            get { if (button_result != null) return button_result.result; return 0; }
-            set { if (button_result != null) Text = button_result.result < .5f ? text + $"{button_result.result:0.000}" : text + $"{button_result.result:0.0}"; }
+            get { if (button_result != null) return (float)Math.Round(button_result.result, 2); return 0; }
+            set { if (button_result != null) Text = button_result.result < 1f ? text + $"{button_result.result:0.000}" : text + $"{button_result.result:0.0}"; }
         }
     }
 
@@ -158,14 +216,40 @@ namespace Support_Class
     {
         public string name = "";
 
-        public My_Panel(string using_name, Padding padding, List<My_Button> buttons = null)
+        Color initial_color;
+        public My_Button_Colorized colorized;
+        public My_Control_Visible my_panel_visible;
+
+        public My_Panel(string using_name, Padding padding, Color using_color, List<My_Button> buttons = null, My_Control_Visible panel_visible = null, My_Button_Colorized panel_color = null)
         {
+            initial_color = using_color;
+            colorized = panel_color;
+            BackColor = initial_color;
+            my_panel_visible = panel_visible;
             name = using_name;
             Padding = padding;
             Dock = DockStyle.Top;
             Width = 450;
             AutoScroll = true;
             if (buttons != null) { foreach (My_Button mb in buttons) Controls.Add(mb); Height = 35 + buttons.Count * 35; }
+        }
+
+        public void visible(byte check_byte, string name)
+        {
+            if (my_panel_visible == null) return;
+            if (name.ToLower() == "no module" || check_byte >= my_panel_visible.position) Visible = true;
+            else Visible = false;
+        }
+
+        public void width_with_buttons()
+        {
+            Height = Padding.Vertical;
+            foreach (My_Button mb in Controls) if (mb.Visible) Height += 35;
+        }
+
+        public void Checkout(ModBus_Libra checking_port)
+        {
+            if (colorized != null) { if (colorized.Checkout(checking_port, initial_color).Item2) BackColor = colorized.Checkout(checking_port, initial_color).Item1; }
         }
     }
 
@@ -211,15 +295,24 @@ namespace Support_Class
 
     public class Min_Max_None
     {
-        public int Min;
-        public int Max;
-        public int None;
+        public float Min;
+        public float Max;
+        public float None;
 
-        public Min_Max_None(int min, int max, int none = 0)
+        public Min_Max_None(float min, float max, float none = 0)
         {
             Min = min;
             Max = max;
             None = none;
+        }
+
+        public void setup(string[] parameters)
+        {
+            Min = float.Parse(parameters[0]);
+            Max = float.Parse(parameters[1]);
+            if (parameters.Length >= 3) None = float.Parse(parameters[2]);
+            else None = 0;
+
         }
     }
 
@@ -228,19 +321,43 @@ namespace Support_Class
         public string name = "";
         public int power_chanel = 0;
         public int exchange_chanel = 0;
-        public float current = 0;
 
-        public Dictionary<string, byte[]> all_registers;
+        public Dictionary<string, byte[]> all_registers = new Dictionary<string, byte[]>()
+        {
+            { "kf", new byte[6]},
+            { "tu", new byte[6]},
+            { "tc", new byte[6]},
+            { "entu", new byte[6]},
+            { "power", new byte[6]},
+            { "din32", new byte[6]},
+            { "din16", new byte[6]},
+            { "mtu5tu", new byte[6]},
+            { "temperature", new byte[6]}
+        };
+        public Dictionary<string, bool> tests = new Dictionary<string, bool>()
+        {
+            { "Проверка ТУ", false},
+            { "Проверка KF", false},
+            { "Проверка TC", false},
+            { "Проверка Din", false},
+            { "Проверка EnTU", false},
+            { "Проверка ток 0", false},
+            { "Проверка 12B TC", false},
+            { "Проверка питания", false},
+            { "Проверка ТУ MTU5", false},
+            { "Проверка температуры", false},
+            { "Проверка питания MTU5", false}
+        };
 
         public Min_Max_None din;
         public Min_Max_None kf;
         public Min_Max_None tc;
         public Min_Max_None tc12v;
+        public Min_Max_None current;
 
-        public Module_Setup(string module_name, int power_chanel_count, int exchange_chanel_count, float module_current, Min_Max_None DIN, Min_Max_None KF, Min_Max_None TC, Min_Max_None TC12V, Dictionary<string, byte[]> using_registers = null)
+        public Module_Setup(string module_name, int power_chanel_count, int exchange_chanel_count, Min_Max_None module_current, Min_Max_None DIN, Min_Max_None KF, Min_Max_None TC, Min_Max_None TC12V)
         {
             current = module_current;
-            all_registers = using_registers;
             tc12v = TC12V;
             din = DIN;
             kf = KF;
@@ -270,5 +387,4 @@ namespace Support_Class
             port.Transmit(data);
         }
     }
-
 }
