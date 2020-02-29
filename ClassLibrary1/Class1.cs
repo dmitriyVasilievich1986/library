@@ -172,7 +172,7 @@ namespace Support_Class
             button_result = result;
             click = my_button_click;
             colorized = button_color;
-            if (click != null) { Click += (s, e) => { click.send_data(BackColor == Color.Red ? (byte)0 : (byte)1); }; }
+            //if (click != null) { Click += (s, e) => { click.send_data(BackColor == Color.Red ? (byte)0 : (byte)1); }; }
             initial_color = using_color;
             TextAlign = ContentAlignment.MiddleLeft;
             Padding = new Padding(40, 0, 0, 0);
@@ -185,6 +185,11 @@ namespace Support_Class
             Height = 35;
             FlatAppearance.BorderSize = 0;
             Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Bold, GraphicsUnit.Point, 204);
+        }
+
+        public void set_button()
+        {
+            if (click != null) click.send_data(BackColor == Color.Red ? (byte)0 : (byte)1);
         }
 
         public void Reset()
