@@ -49,18 +49,16 @@ namespace Support_Class
     public class My_Button_Colorized
     {
         int position;
-        short addres;
 
         ModBus_Libra port;
         ModBus_Libra port2;
-        Addres_Controls dout_addres;        
+        public Registers addres;
 
-        public My_Button_Colorized(ModBus_Libra using_port, short color_check_color, Addres_Controls dout_addres_color, int position_color, ModBus_Libra checkout_port2 = null)
+        public My_Button_Colorized(ModBus_Libra using_port, Registers using_addres, int position_color, ModBus_Libra checkout_port2 = null)
         {
             port = using_port;
             port2 = checkout_port2;
-            addres = color_check_color;
-            dout_addres = dout_addres_color;
+            addres = using_addres;
             position = position_color;
         }
 
@@ -70,8 +68,8 @@ namespace Support_Class
             try
             {
                 if (port.Port.PortName == checking_port.Port.PortName && port.Data_Receive[1] == 0x02 &&
-                (short)((short)(port.Data_Transmit[2] << 8) | (short)port.Data_Transmit[3]) == addres &&
-                port.Data_Receive[0] == dout_addres.Addres)
+                (short)((short)(port.Data_Transmit[2] << 8) | (short)port.Data_Transmit[3]) == addres.Register_short &&
+                port.Data_Receive[0] == addres.addres.Addres)
                 {
                     short some = port.Data_Receive[2] == 1 ? (short)port.Data_Receive[3] : (short)((short)(port.Data_Receive[3] << 8) | (short)port.Data_Receive[4]);
                     output.Item1 = (some & position) != 0 ? Color.Red : init_color;
@@ -83,8 +81,8 @@ namespace Support_Class
                 try
                 {
                     if (port2.Port.PortName == checking_port.Port.PortName && port2.Data_Receive[1] == 0x02 &&
-                    (short)((short)(port2.Data_Transmit[2] << 8) | (short)port2.Data_Transmit[3]) == addres &&
-                    port2.Data_Receive[0] == dout_addres.Addres)
+                    (short)((short)(port2.Data_Transmit[2] << 8) | (short)port2.Data_Transmit[3]) == addres.Register_short &&
+                    port2.Data_Receive[0] == addres.addres.Addres)
                     {
                         short some = port2.Data_Receive[2] == 1 ? (short)port2.Data_Receive[3] : (short)((short)(port2.Data_Receive[3] << 8) | (short)port2.Data_Receive[4]);
                         output.Item1 = (some & position) != 0 ? Color.Red : init_color;
@@ -100,17 +98,15 @@ namespace Support_Class
     {
         public ModBus_Libra port;
         public ModBus_Libra port2;
-        public Addres_Controls dout_addres;
+        public Registers addres;
 
-        public short addres;
         int position;
         public float result = 0;
 
-        public My_Button_Result(ModBus_Libra checkout_port, Addres_Controls checkout_dout_addres, short checkout_addres, int checkout_position, ModBus_Libra checkout_port2 = null)
+        public My_Button_Result(ModBus_Libra checkout_port, Registers checkout_addres, int checkout_position, ModBus_Libra checkout_port2 = null)
         {
             port2 = checkout_port2;
             port = checkout_port;
-            dout_addres = checkout_dout_addres;
             addres = checkout_addres;
             position = checkout_position;
         }
@@ -121,8 +117,8 @@ namespace Support_Class
             {
                 try
                 {
-                    if (port_checkout.Data_Receive[0] == dout_addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
-                        (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres)
+                    if (port_checkout.Data_Receive[0] == addres.addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
+                        (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres.Register_short)
                     { result = port_checkout.Result[position]; }
                 }
                 catch (Exception) { }
@@ -132,8 +128,8 @@ namespace Support_Class
                 {
                     try
                     {
-                        if (port_checkout.Data_Receive[0] == dout_addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
-                            (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres)
+                        if (port_checkout.Data_Receive[0] == addres.addres.Addres && port_checkout.Data_Receive[1] == 0x04 &&
+                            (short)((short)(port_checkout.Data_Transmit[2] << 8) | (short)port_checkout.Data_Transmit[3]) == addres.Register_short)
                         { result = port_checkout.Result[position]; }
                     }
                     catch (Exception) { }
@@ -144,12 +140,13 @@ namespace Support_Class
 
     public class My_Control_Visible
     {
-        public byte position;
-        public string name;
+        public Registers register;
 
-        public My_Control_Visible(string using_name, byte using_position)
+        public byte position;
+
+        public My_Control_Visible(Registers using_register, byte using_position = 1)
         {
-            name = using_name;
+            register = using_register;
             position = using_position;
         }
     }
@@ -197,10 +194,22 @@ namespace Support_Class
             if (BackColor == Color.Red)  click.send_data(0);
         }
 
-        public void visible(byte check_byte, string name)
+        public void visible(Module_Parameters mp)
         {
             if (my_button_visible == null) return;
-            if (name.ToLower() == "no module" || check_byte >= my_button_visible.position) Visible = true;
+            if (mp.using_module.all_registers.Register.Find(x => x.name == my_button_visible.register.name).Register[5] >= my_button_visible.position || mp.using_module.name.ToLower() == "no module") 
+            {
+                Visible = true;
+                if (mp.using_module.name.ToLower() != "no module" && button_result != null)
+                {
+                    button_result.addres.Register_short = mp.using_module.all_registers.Register.Find(x => x.name == button_result.addres.name).Register_short;
+                    button_result.addres.addres = mp.using_module.all_registers.Register.Find(x => x.name == button_result.addres.name).addres;
+                }
+                if (mp.using_module.name.ToLower() != "no module" && colorized != null && mp.using_module.all_registers.Register.Exists(x => x.name == colorized.addres.name)) 
+                {
+                    colorized.addres.Register_short = mp.using_module.all_registers.Register.Find(x => x.name == colorized.addres.name).Register_short;
+                }
+            }
             else Visible = false;
         }
 
@@ -212,7 +221,7 @@ namespace Support_Class
 
         public float Result
         {
-            get { if (button_result != null) return (float)Math.Round(button_result.result, 2); return 0; }
+            get { if (button_result != null) return button_result.result > .1f ? (float)Math.Round(button_result.result, 2) : (float)Math.Round(button_result.result, 3); return 0; }
             set { if (button_result != null) Text = button_result.result < 1f ? text + $"{button_result.result:0.000}" : text + $"{button_result.result:0.0}"; }
         }
     }
@@ -239,10 +248,14 @@ namespace Support_Class
             if (buttons != null) { foreach (My_Button mb in buttons) Controls.Add(mb); Height = 35 + buttons.Count * 35; }
         }
 
-        public void visible(byte check_byte, string name)
+        public void visible(Module_Parameters mp)
         {
             if (my_panel_visible == null) return;
-            if (name.ToLower() == "no module" || check_byte >= my_panel_visible.position) Visible = true;
+            if (mp.using_module.all_registers.Register.Find(x => x.name == my_panel_visible.register.name).Register[5] > 0 || mp.using_module.name.ToLower() == "no module") 
+            {
+                Visible = true;
+                width_with_buttons();
+            }
             else Visible = false;
         }
 
@@ -286,16 +299,27 @@ namespace Support_Class
         public Addres_Controls current_psc;
         public Addres_Controls dout_control;
 
-        public Module_Parameters(byte module_addres, byte dout_controls_addres, byte dout_din16_addres, byte dout_din32_addres, byte psc, byte mtu5, Module_Setup module_selected)
+        public Module_Parameters(Module_Setup module_name)
         {
-            using_module = module_selected;
-            v12 = new Addres_Controls(mtu5);
-            current_psc = new Addres_Controls(psc);
-            module = new Addres_Controls(module_addres);
-            dout_din16 = new Addres_Controls(dout_din16_addres);
-            dout_din32 = new Addres_Controls(dout_din32_addres);
-            dout_control = new Addres_Controls(dout_controls_addres);
+            using_module = module_name;
+            v12 = new Addres_Controls(0);
+            current_psc = new Addres_Controls(0);
+            module = new Addres_Controls(0);
+            dout_din16 = new Addres_Controls(0);
+            dout_din32 = new Addres_Controls(0);
+            dout_control = new Addres_Controls(0);
         }
+
+        //public Module_Parameters(byte module_addres, byte dout_controls_addres, byte dout_din16_addres, byte dout_din32_addres, byte psc, byte mtu5, Module_Setup module_selected)
+        //{
+        //    using_module = module_selected;
+        //    v12 = new Addres_Controls(mtu5);
+        //    current_psc = new Addres_Controls(psc);
+        //    module = new Addres_Controls(module_addres);
+        //    dout_din16 = new Addres_Controls(dout_din16_addres);
+        //    dout_din32 = new Addres_Controls(dout_din32_addres);
+        //    dout_control = new Addres_Controls(dout_controls_addres);
+        //}
     }
 
     public class Min_Max_None
@@ -304,7 +328,7 @@ namespace Support_Class
         public float Max;
         public float None;
 
-        public Min_Max_None(float min, float max, float none = 0)
+        public Min_Max_None(float min = 0, float max = 0, float none = 0)
         {
             Min = min;
             Max = max;
@@ -321,75 +345,176 @@ namespace Support_Class
         }
     }
 
+    public class Registers
+    {
+        public string name;
+        public Addres_Controls addres;
+        byte[] register;
+
+        public Registers(string reg_name, Addres_Controls using_addres)
+        {
+            addres = using_addres;
+            name = reg_name;
+            register = new byte[6];
+        }
+
+        public Registers()
+        {
+            addres = new Addres_Controls(0);
+            name = "";
+            register = new byte[6];
+        }
+
+        public Registers(string reg_name, Addres_Controls using_addres, byte[] sending_data)
+        {
+            addres = using_addres;
+            name = reg_name;
+            register = sending_data;
+        }
+
+        public Registers(string reg_name)
+        {
+            addres = new Addres_Controls(0);
+            name = reg_name;
+            register = new byte[6];
+        }
+
+        public byte[] Register
+        {
+            get { register[0] = addres.Addres; return register; }
+            set { register = value; }
+        }
+
+        public short Register_short
+        {
+            get { return (short)((short)(register[2] << 8) | (short)register[3]); }
+            set { register[2] = (byte)(value >> 8); register[3] = (byte)value; }
+        }
+    }
+
+    public class All_Registers
+    {
+        public Registers kf = new Registers("kf");
+        public Registers tc = new Registers("tc");
+        public Registers tu = new Registers("tu");
+        public Registers entu = new Registers("entu");
+        public Registers power = new Registers("power");
+        public Registers din16 = new Registers("din16");
+        public Registers din32 = new Registers("din32");
+        public Registers mtu5tu = new Registers("mtu5 tu");
+        public Registers battary = new Registers("battary");
+        public Registers PSCoutu = new Registers("PSC out u");
+        public Registers PSCouti = new Registers("PSC out i");
+        public Registers battaryi = new Registers("battary i");
+        public Registers temperature = new Registers("temperature");
+
+        public List<Registers> Register
+        {
+            get { return new List<Registers>() { kf, tc, tu, entu, power, battary, din16, din32, mtu5tu, temperature, PSCoutu, PSCouti, battaryi }; }
+        }
+    }
+
+    public class Tests
+    {
+        public string name;
+        public string SQLname;
+        bool enable = false;
+
+        public Tests(string test_name, string SQL_name)
+        {
+            SQLname = SQL_name;
+            name = test_name;
+        }
+
+        public bool Enable
+        {
+            get { return enable; }
+            set { enable = value; }
+        }
+    }
+
+    public class All_Tests
+    {
+        public Tests tu = new Tests("Проверка ТУ", "tu");
+        public Tests kf = new Tests("Проверка KF", "kf");
+        public Tests tc = new Tests("Проверка TC", "tc");
+        public Tests din = new Tests("Проверка Din", "din");
+        public Tests entu = new Tests("Проверка EnTU", "entu");
+        public Tests tc12v = new Tests("Проверка 12B TC", "tc12v");
+        public Tests power = new Tests("Проверка питания", "current");
+        public Tests tuMTU5 = new Tests("Проверка ТУ MTU5", "MTU5_TU");
+        public Tests current0 = new Tests("Проверка ток 0", "current0");
+        public Tests battary = new Tests("Проверка заряда батареи", "battary");
+        public Tests powerMTU5 = new Tests("Проверка питания MTU5", "MTU5_Power");
+        public Tests temperature = new Tests("Проверка температуры", "temperature");
+
+        public List<Tests> Test
+        {
+            get { return new List<Tests>() { tu, kf, tc, din, entu, tc12v, power, tuMTU5, current0, powerMTU5, temperature, battary }; }
+        }
+    }
+
     public class Module_Setup
     {
         public string name = "";
         public int power_chanel = 0;
         public int exchange_chanel = 0;
 
-        public Dictionary<string, byte[]> all_registers = new Dictionary<string, byte[]>()
-        {
-            { "kf", new byte[6]},
-            { "tu", new byte[6]},
-            { "tc", new byte[6]},
-            { "entu", new byte[6]},
-            { "power", new byte[6]},
-            { "din32", new byte[6]},
-            { "din16", new byte[6]},
-            { "mtu5tu", new byte[6]},
-            { "temperature", new byte[6]}
-        };
-        public Dictionary<string, bool> tests = new Dictionary<string, bool>()
-        {
-            { "Проверка ТУ", false},
-            { "Проверка KF", false},
-            { "Проверка TC", false},
-            { "Проверка Din", false},
-            { "Проверка EnTU", false},
-            { "Проверка ток 0", false},
-            { "Проверка 12B TC", false},
-            { "Проверка питания", false},
-            { "Проверка ТУ MTU5", false},
-            { "Проверка температуры", false},
-            { "Проверка питания MTU5", false}
-        };
-
         public Min_Max_None din;
         public Min_Max_None kf;
         public Min_Max_None tc;
         public Min_Max_None tc12v;
         public Min_Max_None current;
+        public Min_Max_None power;
 
-        public Module_Setup(string module_name, int power_chanel_count, int exchange_chanel_count, Min_Max_None module_current, Min_Max_None DIN, Min_Max_None KF, Min_Max_None TC, Min_Max_None TC12V)
+        public All_Tests all_tests;
+        public All_Registers all_registers;
+
+        public Module_Setup(string module_name)
         {
-            current = module_current;
-            tc12v = TC12V;
-            din = DIN;
-            kf = KF;
-            tc = TC;
+            power_chanel = 0;
+            exchange_chanel = 0;
             name = module_name;
-            power_chanel = power_chanel_count;
-            exchange_chanel = exchange_chanel_count;
+            all_tests = new All_Tests();
+            all_registers = new All_Registers();
+            kf = new Min_Max_None();
+            tc = new Min_Max_None();
+            din = new Min_Max_None();
+            power = new Min_Max_None();
+            tc12v = new Min_Max_None();
+            current = new Min_Max_None();
         }
+
+        //public Module_Setup(string module_name, int power_chanel_count, int exchange_chanel_count, Min_Max_None module_current, Min_Max_None DIN, Min_Max_None KF, Min_Max_None TC, Min_Max_None TC12V)
+        //{
+        //    all_registers = new All_Registers();
+        //    all_tests = new All_Tests();
+        //    power = new Min_Max_None();
+        //    current = module_current;
+        //    tc12v = TC12V;
+        //    din = DIN;
+        //    kf = KF;
+        //    tc = TC;
+        //    name = module_name;
+        //    power_chanel = power_chanel_count;
+        //    exchange_chanel = exchange_chanel_count;
+        //}
     }
 
     public class Send_Data
     {
-        public byte[] data;
+        public Registers data;
         public ModBus_Libra port;
-        public Addres_Controls addres;
 
-        public Send_Data(byte[] sending_data, ModBus_Libra using_prot, Addres_Controls using_addres)
+        public Send_Data(Registers using_data, ModBus_Libra using_port)
         {
-            data = sending_data;
-            port = using_prot;
-            addres = using_addres;
+            data = using_data;
+            port = using_port;
         }
 
         public void sending()
         {
-            data[0] = addres.Addres;
-            port.Transmit(data);
+            port.Transmit(data.Register);
         }
     }
 }
